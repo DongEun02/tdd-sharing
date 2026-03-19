@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TDD DEBATE SESSION</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;800&display=swap');
+
+      :root {
+        --accent-color: #ff5f56; /* 이미지의 레드/코랄 포인트 컬러 */
+        --bg-color: #121212; /* 메인 배경색 */
+        --card-bg: #1e1e1e; /* 카드 배경색 */
+        --inner-bg: #181818; /* 카드 내부 스탠스 박스 배경색 */
+        --border-color: #2a2a2a;
+      }
+
+      body {
+        font-family: 'Pretendard', sans-serif;
+        background-color: var(--bg-color);
+        color: #ffffff;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* 스무스한 화면 전환 애니메이션 */
+      .view-transition {
+        animation: fadeIn 0.4s ease-out forwards;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* 카드 스타일 커스텀 */
+      .debate-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 24px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        position: relative;
+      }
+
+      .debate-card:hover {
+        transform: translateY(-5px);
+        border-color: #444;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      .q-number {
+        color: var(--accent-color);
+        font-weight: 800;
+        font-size: 1.1rem;
+        margin-bottom: 12px;
+        display: block;
+      }
+
+      .stance-container {
+        background-color: var(--inner-bg);
+        border-left: 3px solid var(--accent-color);
+        padding: 16px;
+        margin-top: 16px;
+        border-radius: 4px;
+      }
+
+      .stance-label {
+        color: var(--accent-color);
+        font-size: 0.7rem;
+        font-weight: 800;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      /* 타이머 강조 스타일 */
+      .timer-text {
+        font-variant-numeric: tabular-nums;
+        color: var(--accent-color);
+        text-shadow: 0 0 20px rgba(255, 95, 86, 0.2);
+      }
+
+      /* 커스텀 버튼 */
+      .btn-action {
+        background-color: var(--accent-color);
+        color: white;
+        transition: all 0.2s;
+      }
+      .btn-action:hover {
+        background-color: #e54e46;
+        transform: scale(1.02);
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen flex flex-col selection:bg-[#ff5f56] selection:text-white"
+  >
+    <!-- 헤더 -->
+    <header class="py-10 px-6 text-center border-b border-[#222]">
+      <h1 class="text-3xl font-black tracking-tighter uppercase italic">
+        TDD <span style="color: var(--accent-color)">DEBATE</span> PROTOCOL
+      </h1>
+    </header>
+
+    <main class="flex-grow max-w-7xl mx-auto w-full p-6 md:p-12">
+      <!-- 홈 뷰: 카드 리스트 -->
+      <div id="home-view" class="view-transition">
+        <div
+          id="topics-grid"
+          class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8"
+        >
+          <!-- JS로 카드가 생성됩니다 -->
+        </div>
+      </div>
+
+      <!-- 타이머 뷰 -->
+      <div id="timer-view" class="view-transition hidden">
+        <button
+          id="btn-back"
+          class="mb-8 text-zinc-500 hover:text-white flex items-center transition-colors text-xs font-bold uppercase tracking-widest"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M10 19l-7-7m0 0l7-7m-7 7h18"
+            />
+          </svg>
+          Back to Dashboard
+        </button>
+
+        <!-- items-stretch를 통해 내부 요소들의 높이를 자동으로 맞춤 -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
+          <!-- 토론 정보 섹션 -->
+          <div class="lg:col-span-7">
+            <div
+              class="bg-[#1e1e1e] rounded-xl border border-[#2a2a2a] overflow-hidden h-full"
+            >
+              <div class="p-8 md:p-10 flex flex-col h-full">
+                <span id="display-q-id" class="q-number text-lg mb-4"></span>
+                <h2
+                  id="display-title"
+                  class="text-2xl md:text-3xl font-black leading-tight text-white mb-8 break-keep"
+                ></h2>
+
+                <div class="stance-container !mt-auto !p-8">
+                  <span class="stance-label text-xs">OUR STANCE</span>
+                  <p
+                    id="display-stance"
+                    class="text-base md:text-lg text-zinc-300 leading-relaxed font-medium"
+                  ></p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 타이머 컨트롤 섹션 -->
+          <div class="lg:col-span-5">
+            <div
+              class="bg-[#1e1e1e] rounded-xl p-10 border border-[#2a2a2a] flex flex-col items-center justify-center h-full"
+            >
+              <div
+                id="timer-display"
+                class="timer-text text-7xl md:text-8xl font-black mb-10 tracking-tighter"
+              >
+                10:00
+              </div>
+
+              <div class="flex flex-col w-full gap-4">
+                <button
+                  id="btn-toggle"
+                  class="btn-action w-full py-5 rounded-lg font-black uppercase tracking-widest text-base shadow-lg"
+                >
+                  START SESSION
+                </button>
+                <button
+                  id="btn-reset"
+                  class="w-full py-4 border border-[#333] text-zinc-500 hover:text-white hover:border-zinc-500 transition-all rounded-lg text-xs font-bold uppercase tracking-widest"
+                >
+                  Reset Timer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="py-12 border-t border-[#222] text-center">
+      <p class="text-[10px] text-zinc-600 tracking-[0.3em] uppercase">
+        Test-Driven Development // Debate Utility v2.0
+      </p>
+    </footer>
+
+    <script>
+      const questions = [
+        {
+          id: 1,
+          title: 'TDD 설계 단계에서 어느 정도 깊이까지 생각할지',
+          stance:
+            '"어떤 클래스가 어떤 기능을 갖고 있는지까지만 생각하고, 클래스명과 메서드명 등 내부 구조가 어떻게 되어 있는지는 생각하지 않는다."',
+        },
+        {
+          id: 2,
+          title: 'getter 메서드에 대한 테스트를 작성할 필요가 있을까?',
+          stance: '"getter 자체에 대한 테스트는 필요 없다."',
+        },
+        {
+          id: 3,
+          title:
+            '하나의 큰 메서드가 여러 개의 작은 메서드를 품고 있다면, 하위 메서드들까지 테스트해야 할까?',
+          stance: '"작은 메서드까지 모두 테스트해야 한다."',
+        },
+        {
+          id: 4,
+          title: '대규모 프로젝트에서 TDD는 좋은 방법인가?',
+          stance: '"대규모 프로젝트에서 TDD는 좋은 방법이다."',
+        },
+        {
+          id: 5,
+          title:
+            '시간이 없는 상황에서의 TDD, 시간 낭비인가? 미래를 위한 투자인가.',
+          stance: '"미래에 편하게 유지보수 하기 위한 정당한 시간 투자이다."',
+        },
+        {
+          id: 6,
+          title:
+            'TDD를 할 때 핵심이 되는 로직부터 해야 될까? 단순 검증같은 쉬운 로직부터 해야 될까?',
+          stance: '"핵심 로직 먼저 하는 게 맞다."',
+        },
+        {
+          id: 7,
+          title: 'Mock(모킹)이 적을수록 TDD를 잘 실천한 것일까?',
+          stance: '"모킹의 빈도가 적을수록 TDD를 잘 실천한 것이다."',
+        },
+        {
+          id: 8,
+          title: '유틸 테스트를 해야 될까?',
+          stance:
+            '"유틸 함수를 테스트하는 것은 언어 자체를 테스트하는 것과 같기 때문에 필요 없다."',
+        },
+      ];
+
+      let timeLeft = 600;
+      let timerInterval = null;
+      let isRunning = false;
+
+      const homeView = document.getElementById('home-view');
+      const timerView = document.getElementById('timer-view');
+      const topicsGrid = document.getElementById('topics-grid');
+      const displayTitle = document.getElementById('display-title');
+      const displayStance = document.getElementById('display-stance');
+      const displayQId = document.getElementById('display-q-id');
+      const timerDisplay = document.getElementById('timer-display');
+      const btnToggle = document.getElementById('btn-toggle');
+      const btnReset = document.getElementById('btn-reset');
+      const btnBack = document.getElementById('btn-back');
+
+      function renderTopics() {
+        topicsGrid.innerHTML = questions
+          .map(
+            (q) => `
+                <div class="debate-card h-full" onclick="startDiscussion(${q.id})">
+                    <span class="q-number italic uppercase">Q${q.id}</span>
+                    <h3 class="text-xl md:text-2xl font-black text-white leading-tight mb-6 break-keep">${q.title}</h3>
+                    
+                    <div class="stance-container">
+                        <span class="stance-label">OUR STANCE</span>
+                        <p class="text-zinc-400 text-sm leading-relaxed">${q.stance}</p>
+                    </div>
+                </div>
+            `,
+          )
+          .join('');
+      }
+
+      window.startDiscussion = function (id) {
+        const topic = questions.find((q) => q.id === id);
+        if (!topic) return;
+
+        displayQId.innerText = `Q${topic.id}`;
+        displayTitle.innerText = topic.title;
+        displayStance.innerText = topic.stance;
+
+        homeView.classList.add('hidden');
+        timerView.classList.remove('hidden');
+
+        resetTimer();
+        startTimer();
+      };
+
+      btnBack.addEventListener('click', () => {
+        stopTimer();
+        timerView.classList.add('hidden');
+        homeView.classList.remove('hidden');
+      });
+
+      function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeLeft <= 60) {
+          timerDisplay.style.color = '#ff0000';
+          timerDisplay.style.textShadow = '0 0 30px rgba(255, 0, 0, 0.5)';
+        } else {
+          timerDisplay.style.color = 'var(--accent-color)';
+          timerDisplay.style.textShadow = '0 0 20px rgba(255, 95, 86, 0.2)';
+        }
+      }
+
+      function startTimer() {
+        if (isRunning) return;
+        isRunning = true;
+        btnToggle.innerText = 'PAUSE';
+        btnToggle.classList.replace('btn-action', 'bg-zinc-100');
+        btnToggle.classList.add('text-black');
+
+        timerInterval = setInterval(() => {
+          if (timeLeft > 0) {
+            timeLeft--;
+            updateTimerDisplay();
+          } else {
+            stopTimer();
+            timerDisplay.innerText = 'TIME OUT';
+          }
+        }, 1000);
+      }
+
+      function stopTimer() {
+        isRunning = false;
+        clearInterval(timerInterval);
+        btnToggle.innerText = 'RESUME';
+        btnToggle.classList.replace('bg-zinc-100', 'btn-action');
+        btnToggle.classList.remove('text-black');
+      }
+
+      function resetTimer() {
+        stopTimer();
+        timeLeft = 600;
+        updateTimerDisplay();
+        btnToggle.innerText = 'START SESSION';
+      }
+
+      btnToggle.addEventListener('click', () => {
+        if (isRunning) stopTimer();
+        else startTimer();
+      });
+
+      btnReset.addEventListener('click', resetTimer);
+
+      renderTopics();
+    </script>
+  </body>
+</html>
