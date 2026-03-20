@@ -184,7 +184,7 @@
                 id="timer-display"
                 class="timer-text text-7xl md:text-8xl font-black mb-10 tracking-tighter"
               >
-                10:00
+                08:00
               </div>
 
               <div class="flex flex-col w-full gap-4">
@@ -262,7 +262,7 @@
         },
       ];
 
-      let timeLeft = 600;
+      let timeLeft = 480;
       let timerInterval = null;
       let isRunning = false;
 
@@ -358,7 +358,7 @@
 
       function resetTimer() {
         stopTimer();
-        timeLeft = 600;
+        timeLeft = 480;
         updateTimerDisplay();
         btnToggle.innerText = 'START SESSION';
       }
